@@ -1,0 +1,13 @@
+[project]
+name = "smart-code-reviewer"
+version = "0.1.0"
+description = "Review code for readability, structure, and maintainability"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+app = "smart_code_reviewer.app:app"
+
+[tool.vercel]
+# Tells Vercel to use the FastAPI app from smart_code_reviewer.app
+# https://vercel.com/docs/frameworks/backend/fastapi
