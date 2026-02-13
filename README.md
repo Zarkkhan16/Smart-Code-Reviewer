@@ -19,6 +19,3 @@ Supported languages: **Python** (full analysis). Other languages get basic line-
   Structure     █████████░  Good – 1 long function (45 lines)
   Maintainability ████████░░  Good – 2 blocks with elevated complexity
 ```
-## License
-
-MIT
