@@ -1,6 +1,6 @@
-#Smart Code Reviewer
+# Smart Code Reviewer
 
-#Project Description
+# Project Description
 
 Smart Code Reviewer is a tool that analyzes code for:
 
