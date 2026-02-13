@@ -6,7 +6,7 @@ requires-python = ">=3.10"
 dependencies = []
 
 [project.scripts]
-app = "smart_code_reviewer.app:app"
+app = "app:app"
 
 [tool.vercel]
 # Tells Vercel to use the FastAPI app from smart_code_reviewer.app
