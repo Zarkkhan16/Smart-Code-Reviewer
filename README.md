@@ -20,6 +20,6 @@ Full analysis for Python
 
 The tool helps developers improve their code before creating pull requests.
 
-Live URL
+# Live URL
 
 🔗 https://smart-code-reviewer-final.vercel.app/
