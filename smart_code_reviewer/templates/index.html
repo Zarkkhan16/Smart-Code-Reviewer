@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Code Reviewer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f12;
+      --surface: #18181d;
+      --border: #2a2a32;
+      --text: #e4e4e9;
+      --muted: #8b8b9a;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --good: #22c55e;
+      --warn: #eab308;
+      --poor: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Outfit', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin: 0 0 0.5rem;
+      letter-spacing: -0.02em;
+    }
+    .tagline {
+      color: var(--muted);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+    }
+    .grid {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+      color: var(--muted);
+    }
+    textarea {
+      width: 100%;
+      min-height: 280px;
+      padding: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      resize: vertical;
+    }
+    textarea::placeholder { color: var(--muted); }
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+    select {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font-family: inherit;
+      font-size: 0.9rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+    button {
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover { background: var(--accent-hover); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .result {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      min-height: 120px;
+    }
+    .result.empty { color: var(--muted); }
+    .result h3 {
+      font-size: 1rem;
+      margin: 0 0 1rem;
+      color: var(--muted);
+    }
+    .score-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .score-name { font-weight: 600; width: 120px; }
+    .score-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .score-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.3s;
+    }
+    .score-fill.good { background: var(--good); }
+    .score-fill.fair { background: var(--warn); }
+    .score-fill.poor { background: var(--poor); }
+    .score-value { font-size: 0.85rem; color: var(--muted); min-width: 4rem; }
+    .suggestions { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+    .suggestions ul { margin: 0; padding-left: 1.25rem; }
+    .suggestions li { margin-bottom: 0.35rem; color: var(--muted); font-size: 0.9rem; }
+    .error { color: var(--poor); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Smart Code Reviewer</h1>
+    <p class="tagline">Review code for readability, structure, and maintainability before human review.</p>
+
+    <div class="grid">
+      <div>
+        <label for="source">Paste your code</label>
+        <textarea id="source" placeholder="def hello():\n    print('Hello, world')"></textarea>
+        <label for="filename">Filename (for language detection)</label>
+        <select id="filename">
+          <option value="snippet.py">snippet.py</option>
+          <option value="snippet.js">snippet.js</option>
+          <option value="snippet.ts">snippet.ts</option>
+        </select>
+        <button type="button" id="review">Review code</button>
+      </div>
+      <div>
+        <label>Report</label>
+        <div class="result empty" id="result">Paste code and click Review to see feedback.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const source = document.getElementById('source');
+    const filename = document.getElementById('filename');
+    const reviewBtn = document.getElementById('review');
+    const resultEl = document.getElementById('result');
+
+    function scoreClass(score) {
+      if (score >= 7) return 'good';
+      if (score >= 4) return 'fair';
+      return 'poor';
+    }
+
+    function label(score) {
+      if (score >= 9) return 'Excellent';
+      if (score >= 7) return 'Good';
+      if (score >= 5) return 'Fair';
+      if (score >= 3) return 'Needs work';
+      return 'Poor';
+    }
+
+    reviewBtn.addEventListener('click', async () => {
+      const code = source.value.trim();
+      if (!code) {
+        resultEl.innerHTML = '<span class="error">Enter some code to review.</span>';
+        resultEl.classList.remove('empty');
+        return;
+      }
+      reviewBtn.disabled = true;
+      resultEl.classList.remove('empty');
+      resultEl.innerHTML = 'Analyzing…';
+
+      try {
+        const res = await fetch('/review', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: code, filename: filename.value })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          resultEl.innerHTML = '<span class="error">' + (data.detail || res.statusText) + '</span>';
+          return;
+        }
+        const r = data.report;
+        let html = '<h3>📄 ' + (r.path || 'snippet') + '</h3>';
+        if (r.error) {
+          html += '<p class="error">' + r.error + '</p>';
+        } else {
+          for (const [name, cat] of Object.entries({ Readability: r.readability, Structure: r.structure, Maintainability: r.maintainability })) {
+            if (!cat) continue;
+            const pct = Math.round(cat.score * 10);
+            html += '<div class="score-row">';
+            html += '<span class="score-name">' + name + '</span>';
+            html += '<div class="score-bar"><div class="score-fill ' + scoreClass(cat.score) + '" style="width:' + pct + '%"></div></div>';
+            html += '<span class="score-value">' + label(cat.score) + '</span></div>';
+          }
+          const allSuggestions = [].concat(
+            (r.readability && r.readability.suggestions) || [],
+            (r.structure && r.structure.suggestions) || [],
+            (r.maintainability && r.maintainability.suggestions) || []
+          );
+          if (allSuggestions.length) {
+            html += '<div class="suggestions"><ul>';
+            allSuggestions.forEach(s => { html += '<li>' + s + '</li>'; });
+            html += '</ul></div>';
+          }
+        }
+        resultEl.innerHTML = html;
+      } catch (e) {
+        resultEl.innerHTML = '<span class="error">Request failed: ' + e.message + '</span>';
+      } finally {
+        reviewBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
